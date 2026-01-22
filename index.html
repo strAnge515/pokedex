@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokedex</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body onload="init()">
+      <!-- CONTENT -->
+       <div id="content"></div>
+    <article class="pokemon-card" data-id="1">
+        <header class="card-header">
+            <h2 class="pokemon-name">Bulbasaur</h2>
+            <span class="pokemon-id">#001</span>
+        </header>
+
+        <main class="card-main">
+            <img src="" alt="Bulbasaur" class="pokemon-image">
+        </main>
+
+       
+        <footer class="card-footer">
+            <span class="type grass">Grass</span>
+            <span class="type poison">Poison</span>
+        </footer>
+    </article>
+
+</body>
+<dialog id="pokemon-dialog">
+    <div class="dialog-content">
+
+        <!-- HEADER -->
+        <header class="dialog-header">
+            <button class="back-button" aria-label="Close dialog">←</button>
+            <h2 class="dialog-pokemon-name">Bulbasaur</h2>
+            <span class="dialog-pokemon-id">#001</span>
+        </header>
+
+        <!-- HERO IMAGE -->
+        <section class="dialog-hero">
+            <img src="" alt="Bulbasaur" class="dialog-pokemon-image">
+        </section>
+
+        <!-- TABS -->
+        <nav class="dialog-tabs">
+            <button data-tab="about" class="tab active">About</button>
+            <button data-tab="stats" class="tab">Base Stats</button>
+            <button data-tab="evolution" class="tab">Evolution</button>
+        </nav>
+
+        <!-- TAB CONTENT -->
+        <section class="dialog-tab-content">
+
+            <div class="tab-panel active" id="about">
+                <!-- About Content -->
+            </div>
+
+            <div class="tab-panel" id="stats">
+                <!-- Base Stats -->
+            </div>
+
+            <div class="tab-panel" id="evolution">
+                <!-- Evolution -->
+            </div>
+
+        </section>
+
+    </div>
+</dialog>
+<script src="script.js"></script>
+
+</html>
