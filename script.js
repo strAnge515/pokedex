@@ -58,7 +58,7 @@ pokemonDialog.addEventListener('click', (event) => {
 });
 
 function pokemonDialogContent() {
-    
+
 }
 
 function renderPokemon() {
@@ -91,7 +91,7 @@ async function loadPokemonDetails(listPokemon, index) {
 
 
     allPokemon.push(pokemon);
-    renderPokemon();
+    
     if (allPokemon.length === 20) {
         renderPokemon();
     };
