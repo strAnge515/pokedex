@@ -11,30 +11,15 @@
 <body onload="init()">
       <!-- CONTENT -->
        <div id="content"></div>
-    <article class="pokemon-card" data-id="1">
-        <header class="card-header">
-            <h2 class="pokemon-name">Bulbasaur</h2>
-            <span class="pokemon-id">#001</span>
-        </header>
-
-        <main class="card-main">
-            <img src="" alt="Bulbasaur" class="pokemon-image">
-        </main>
-
-       
-        <footer class="card-footer">
-            <span class="type grass">Grass</span>
-            <span class="type poison">Poison</span>
-        </footer>
-    </article>
+   
 
 </body>
-<dialog id="pokemon-dialog">
+<dialog  id="pokemon-dialog">
     <div class="dialog-content">
 
         <!-- HEADER -->
         <header class="dialog-header">
-            <button class="back-button" aria-label="Close dialog">←</button>
+            <button onclick="closeDialog()" class="back-button" aria-label="Close dialog">←</button>
             <h2 class="dialog-pokemon-name">Bulbasaur</h2>
             <span class="dialog-pokemon-id">#001</span>
         </header>

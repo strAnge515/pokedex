@@ -1,6 +1,7 @@
 let allPokemon = [];
 
 
+const pokemonDialog = document.getElementById('pokemon-dialog');
 
 
 
@@ -17,18 +18,20 @@ async function getPokemon(path = "") {
 
     for (let i = 0; i < 20 && i < data.results.length; i++) {
         loadPokemonDetails(data.results[i], i);
+         
     }
+   
 }
 
 function genrateTemplate(i) {
     return `
-            <article class="pokemon-card" data-id="${i}">
+            <article onclick="openDialog()" class="pokemon-card" data-id="${i}">
                 <header class="card-header">
                     <h2 class="pokemon-name">${allPokemon[i].name}</h2>
                     <span class="pokemon-id">#${formatedId(i)}</span>
                  </header>
 
-                <main class="card-main">
+                <main class="card-main type-${allPokemon[i].types[0]}">
                     <img src="${allPokemon[i].image}" alt="${allPokemon[i].name}" class="pokemon-image">
                 </main>
 
@@ -37,6 +40,25 @@ function genrateTemplate(i) {
                    ${generateTypesHTML(allPokemon[i].types)}
                 </footer>
             </article>`
+            
+}
+
+function openDialog() {
+  pokemonDialog.showModal();
+}
+
+function closeDialog() {
+    pokemonDialog.close();
+}
+
+pokemonDialog.addEventListener('click', (event) => {
+    if (event.target === pokemonDialog) {
+        pokemonDialog.close();
+    }
+});
+
+function pokemonDialogContent() {
+    
 }
 
 function renderPokemon() {
@@ -45,6 +67,7 @@ function renderPokemon() {
 
     for (let i = 0; i < 20 && i < allPokemon.length; i++) {
         content.innerHTML += genrateTemplate(i);
+       
     }
 }
 
@@ -56,6 +79,7 @@ async function loadPokemonDetails(listPokemon, index) {
     let response = await fetch(listPokemon.url);
     let data = await response.json();
 
+
     let pokemon = {
         id: index + 1,
         name: listPokemon.name,
@@ -63,11 +87,11 @@ async function loadPokemonDetails(listPokemon, index) {
         types: data.types.map(pokeType => pokeType.type.name),
         abilities: data.abilities.map(pokeAbility => pokeAbility.ability.name),
         stats: {}
-    };
+        };
 
 
     allPokemon.push(pokemon);
-    
+    renderPokemon();
     if (allPokemon.length === 20) {
         renderPokemon();
     };
@@ -75,7 +99,7 @@ async function loadPokemonDetails(listPokemon, index) {
 
 function generateTypesHTML(typesArray) {
  return typesArray
-        .map(type => `<span class="type ${type}">${type}</span>`)
+        .map(type => `<span class="type type-${type}">${type}</span>`)
         .join("");
 }
 
