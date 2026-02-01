@@ -17,6 +17,8 @@ async function getPokemon() {
     let data = await response.json();
     for (let i = 0; i < 20 && i < data.results.length; i++) {
         loadPokemonDetails(data.results[i], i);
+
+
     }
 }
 
@@ -65,7 +67,7 @@ function generateDialogTemplate(pokemon) {
         <section class="dialog-tab-content">
 
             <div class="tab-panel active" id="about">
-                <!-- About Content -->
+                ${generateAboutTemplate(pokemon.about)}
             </div>
 
             <div class="tab-panel" id="stats">
@@ -81,7 +83,8 @@ function generateDialogTemplate(pokemon) {
 
 function openDialog(index) {
     pokemonDialog.showModal();
-    dialogContent(allPokemon[index]);
+    const pokemon = allPokemon[index];
+    dialogContent(pokemon);
 }
 
 function closeDialog() {
@@ -121,16 +124,25 @@ async function loadPokemonDetails(listPokemon, index) {
     if (loadedPokemonCount === 20) {
         renderPokemon();
     };
+    
+    console.log(data.stats);
+     
 }
 
 function createPokemonObject(data, listPokemon, index) {
     return {
         id: index + 1,
         name: listPokemon.name,
-        image: data.sprites.front_default,
+        image: data.sprites.other["official-artwork"].front_default,
         types: data.types.map(pokeType => pokeType.type.name),
         abilities: data.abilities.map(pokeAbility => pokeAbility.ability.name),
-        stats: {}
+        stats: {},
+        about: {
+            height: data.height,
+            weight: data.weight,
+            experience: data.base_experience,
+            abilities: data.abilities.map(pokeAbility => pokeAbility.ability.name)
+        }
     };
 }
 
@@ -138,5 +150,14 @@ function generateTypesHTML(typesArray) {
     return typesArray
         .map(type => `<span class="type type-${type}">${type}</span>`)
         .join("");
+}
+
+function generateAboutTemplate(about) {
+    return `
+            <p>Height: ${about.height}</p>
+            <p>Weight: ${about.weight}</p>
+            <p>Base Experience: ${about.experience}</p>
+            <p>Abilities: ${about.abilities.join(", ")}</p>
+    `
 }
 
