@@ -19,6 +19,7 @@ async function getPokemon() {
         loadPokemonDetails(data.results[i], i);
 
 
+
     }
 }
 
@@ -58,9 +59,9 @@ function generateDialogTemplate(pokemon) {
 
         <!-- TABS -->
         <nav class="dialog-tabs">
-            <button data-tab="about" class="tab active">About</button>
-            <button data-tab="stats" class="tab">Base Stats</button>
-            <button data-tab="evolution" class="tab">Evolution</button>
+            <button class="tab active" onclick="showTab('about')">About</button>
+            <button class="tab" onclick="showTab('stats')">Base Stats</button>
+            <button class="tab" onclick="showTab('evolution')">Evolution</button>
         </nav>
 
         <!-- TAB CONTENT -->
@@ -71,7 +72,7 @@ function generateDialogTemplate(pokemon) {
             </div>
 
             <div class="tab-panel" id="stats">
-                <!-- Base Stats -->
+                  ${generateStatsHTML(pokemon.stats)}
             </div>
 
             <div class="tab-panel" id="evolution">
@@ -124,19 +125,25 @@ async function loadPokemonDetails(listPokemon, index) {
     if (loadedPokemonCount === 20) {
         renderPokemon();
     };
-    
-    console.log(data.stats);
-     
+
+   // console.log(data.stats.map(pokeStas => pokeStas.base_stat));//
+   // console.log(data.stats.map(pokeStas => pokeStas.stat.name));//
+   console.log(data);
+   
+
 }
 
-function createPokemonObject(data, listPokemon, index) {
+function createPokemonObject(data, index) {
     return {
         id: index + 1,
-        name: listPokemon.name,
+        name: data.name,
         image: data.sprites.other["official-artwork"].front_default,
         types: data.types.map(pokeType => pokeType.type.name),
         abilities: data.abilities.map(pokeAbility => pokeAbility.ability.name),
-        stats: {},
+        stats: data.stats.map(stat => ({
+            name: stat.stat.name.toUpperCase(),
+            value: stat.base_stat
+        })),
         about: {
             height: data.height,
             weight: data.weight,
@@ -160,4 +167,27 @@ function generateAboutTemplate(about) {
             <p>Abilities: ${about.abilities.join(", ")}</p>
     `
 }
+
+function generateStatsHTML(statsArray) {
+    return statsArray
+        .map(stat => `
+            <div class="stat-row">
+                <span class="stat-name">${stat.name}</span>
+                <span class="stat-value">${stat.value}</span>
+            </div>
+        `)
+        .join("");
+}
+
+function showTab(tabId) {
+    const tabs = document.querySelectorAll('.dialog-tabs .tab');
+    const panels = document.querySelectorAll('.tab-panel');
+
+    tabs.forEach(tab => tab.classList.remove('active'));
+    panels.forEach(panel => panel.classList.remove('active'));
+
+    document.querySelector(`.tab-panel#${tabId}`).classList.add('active');
+    document.querySelector(`.dialog-tabs .tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+}
+
 

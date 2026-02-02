@@ -140,6 +140,15 @@ dialog::backdrop {
   font-weight: 500;
 }
 
+.tab-panel {
+  display: none;
+  padding: 16px;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
 .tab.active {
   border-bottom: 2px solid #333;
 }
