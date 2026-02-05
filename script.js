@@ -1,6 +1,8 @@
 let allPokemon = [];
 let loadedPokemonCount = 0;
 
+
+
 const pokemonDialog = document.getElementById('pokemon-dialog');
 
 
@@ -76,7 +78,7 @@ function generateDialogTemplate(pokemon) {
             </div>
 
             <div class="tab-panel" id="evolution">
-                <!-- Evolution -->
+                ${(generateEvolutionTemplate(pokemon.evoChain))}
             </div>
 
         </section>`
@@ -119,17 +121,19 @@ function formatedId(number) {
 async function loadPokemonDetails(listPokemon, index) {
     let response = await fetch(listPokemon.url);
     let data = await response.json();
-    let pokemon = createPokemonObject(data, listPokemon, index);
+    let pokemon = createPokemonObject(data, index);
+    let evoChain = await loadPokeChain(data);
+    pokemon.evoChain = evoChain;
     allPokemon[index] = pokemon;
+
     loadedPokemonCount++;
     if (loadedPokemonCount === 20) {
         renderPokemon();
     };
 
-   // console.log(data.stats.map(pokeStas => pokeStas.base_stat));//
-   // console.log(data.stats.map(pokeStas => pokeStas.stat.name));//
-   console.log(data);
-   
+    // console.log(data.stats.map(pokeStas => pokeStas.base_stat));//
+    // console.log(data.stats.map(pokeStas => pokeStas.stat.name));//
+
 
 }
 
@@ -149,7 +153,8 @@ function createPokemonObject(data, index) {
             weight: data.weight,
             experience: data.base_experience,
             abilities: data.abilities.map(pokeAbility => pokeAbility.ability.name)
-        }
+        },
+        evoChain: []
     };
 }
 
@@ -179,6 +184,10 @@ function generateStatsHTML(statsArray) {
         .join("");
 }
 
+function generateEvolutionTemplate(evoChain) {
+return evoChain.map(name => `<p>${name.charAt(0).toUpperCase() + name.slice(1)}</p>`).join("");
+}
+
 function showTab(tabId) {
     const tabs = document.querySelectorAll('.dialog-tabs .tab');
     const panels = document.querySelectorAll('.tab-panel');
@@ -189,5 +198,42 @@ function showTab(tabId) {
     document.querySelector(`.tab-panel#${tabId}`).classList.add('active');
     document.querySelector(`.dialog-tabs .tab[onclick="showTab('${tabId}')"]`).classList.add('active');
 }
+
+async function loadPokeChain(data) {
+    let response = await fetch(data.species.url);
+    let pokeSpeciesFetch = await response.json();
+    let evoChainFetch = await fetch(pokeSpeciesFetch.evolution_chain.url);
+    let evoChain = await evoChainFetch.json();
+    return createPokeChain(evoChain);
+}
+
+function createPokeChain(evoChain) {
+    let chainNames = [];
+    let current = evoChain.chain;
+
+    while (current) {
+        chainNames.push(current.species.name);
+
+        if (current.evolves_to.length > 0) {
+            current = current.evolves_to[0];
+        } else {
+            current = null;
+        }
+    }
+    return chainNames;
+}
+
+function loadPokemonChainImg(selectedPokemon) {
+    for (let i = 0; i < allPokemon.length; i++) {
+        const pokemon = allPokemon[i];
+        
+        if (pokemon.name === selectedPokemon) {
+            return pokemon
+        }
+}
+}
+
+
+
 
 
