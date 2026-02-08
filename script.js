@@ -1,91 +1,100 @@
 let allPokemon = [];
-let loadedPokemonCount = 0;
-
-
+let startIndex = 0;
 
 const pokemonDialog = document.getElementById('pokemon-dialog');
-
-
-
-const POKEMON_LIST_URL = "https://pokeapi.co/api/v2/pokemon?limit=100&offset=0"
+const POKEMON_LIST_URL = "https://pokeapi.co/api/v2/pokemon?limit=100&offset=0";
 
 
 async function init() {
-    await getPokemon();
+    showSpinner();
+    const response = await fetch(POKEMON_LIST_URL);
+    const data = await response.json();
+    allPokemon = data.results; 
+    await loadNextBatch();
+    hideSpinner();
 }
 
-async function getPokemon() {
-    let response = await fetch(POKEMON_LIST_URL);
-    let data = await response.json();
-    for (let i = 0; i < 20 && i < data.results.length; i++) {
-        loadPokemonDetails(data.results[i], i);
-
-
-
+async function loadPokemonDetailsIfNeeded(pokemon, index) {
+    if (!pokemon.image) {
+        let response = await fetch(pokemon.url);
+        let data = await response.json();
+        let detailedPokemon = createPokemonObject(data, index);
+        detailedPokemon.evoChain = await loadPokeChain(data);
+        allPokemon[index] = detailedPokemon;
     }
 }
 
+async function loadNextBatch() {
+    showSpinner();
+    const content = document.getElementById("content");
+    const batchSize = 20;
+    let endIndex = Math.min(startIndex + batchSize, allPokemon.length);
+    for (let i = startIndex; i < endIndex; i++) {
+        await loadPokemonDetailsIfNeeded(allPokemon[i], i);
+        content.innerHTML += genrateTemplate(i);
+    }
+    startIndex = endIndex;
+
+    if (startIndex >= allPokemon.length) {
+        document.getElementById("load-more").style.display = "none";
+    }
+    hideSpinner();
+}
+
+
+
 function genrateTemplate(i) {
     return `
-            <article onclick="openDialog(${i})" class="pokemon-card" data-id="${i}">
-                <header class="card-header">
-                    <h2 class="pokemon-name">${allPokemon[i].name}</h2>
-                    <span class="pokemon-id">#${formatedId(i)}</span>
-                 </header>
+        <article onclick="openDialog(${i})" class="pokemon-card" data-id="${i}">
+            <header class="card-header">
+                <h2 class="pokemon-name">${allPokemon[i].name}</h2>
+                <span class="pokemon-id">#${formatedId(i)}</span>
+            </header>
 
-                <main class="card-main type-${allPokemon[i].types[0]}">
-                    <img src="${allPokemon[i].image}" alt="${allPokemon[i].name}" class="pokemon-image">
-                </main>
+            <main class="card-main type-${allPokemon[i].types[0]}">
+                <img src="${allPokemon[i].image}" alt="${allPokemon[i].name}" class="pokemon-image">
+            </main>
 
-       
-                <footer  footer class="card-footer">
-                   ${generateTypesHTML(allPokemon[i].types)}
-                </footer>
-            </article>`
-
+            <footer class="card-footer">
+                ${generateTypesHTML(allPokemon[i].types)}
+            </footer>
+        </article>`;
 }
 
 function generateDialogTemplate(pokemon) {
     return `
-           <!-- HEADER -->
         <header class="dialog-header">
             <button onclick="closeDialog()" class="back-button" aria-label="Close dialog">←</button>
             <h2 class="dialog-pokemon-name">${pokemon.name}</h2>
             <span class="dialog-pokemon-id">${formatedId(pokemon.id - 1)}</span>
         </header>
 
-        <!-- HERO IMAGE -->
         <section class="dialog-hero">
-            <img src="${pokemon.image}" alt="Bulbasaur" class="dialog-pokemon-image type-${pokemon.types[0]}">
+            <img src="${pokemon.image}" alt="${pokemon.name}" class="dialog-pokemon-image type-${pokemon.types[0]}">
         </section>
 
-        <!-- TABS -->
         <nav class="dialog-tabs">
             <button class="tab active" onclick="showTab('about')">About</button>
             <button class="tab" onclick="showTab('stats')">Base Stats</button>
             <button class="tab" onclick="showTab('evolution')">Evolution</button>
         </nav>
 
-        <!-- TAB CONTENT -->
         <section class="dialog-tab-content">
-
             <div class="tab-panel active" id="about">
                 ${generateAboutTemplate(pokemon.about)}
             </div>
-
             <div class="tab-panel" id="stats">
-                  ${generateStatsHTML(pokemon.stats)}
+                ${generateStatsHTML(pokemon.stats)}
             </div>
-
             <div class="tab-panel" id="evolution">
-                ${(generateEvolutionTemplate(pokemon.evoChain))}
+                ${generateEvolutionTemplate(pokemon.evoChain)}
             </div>
-
-        </section>`
+        </section>`;
 }
 
-function openDialog(index) {
+async function openDialog(index) {
     pokemonDialog.showModal();
+    await loadPokemonDetailsIfNeeded(allPokemon[index], index);
     const pokemon = allPokemon[index];
     dialogContent(pokemon);
 }
@@ -96,7 +105,6 @@ function closeDialog() {
 
 function dialogContent(pokemon) {
     let dialogContent = document.getElementById('pokemon-dialog');
-    dialogContent.innerHTML = "";
     dialogContent.innerHTML = generateDialogTemplate(pokemon);
 }
 
@@ -106,35 +114,9 @@ pokemonDialog.addEventListener('click', (event) => {
     }
 });
 
-function renderPokemon() {
-    let content = document.getElementById("content");
-    content.innerHTML = "";
-    for (let i = 0; i < 20 && i < allPokemon.length; i++) {
-        content.innerHTML += genrateTemplate(i);
-    }
-}
 
 function formatedId(number) {
     return (number + 1).toString().padStart(3, "0");
-}
-
-async function loadPokemonDetails(listPokemon, index) {
-    let response = await fetch(listPokemon.url);
-    let data = await response.json();
-    let pokemon = createPokemonObject(data, index);
-    let evoChain = await loadPokeChain(data);
-    pokemon.evoChain = evoChain;
-    allPokemon[index] = pokemon;
-
-    loadedPokemonCount++;
-    if (loadedPokemonCount === 20) {
-        renderPokemon();
-    };
-
-    // console.log(data.stats.map(pokeStas => pokeStas.base_stat));//
-    // console.log(data.stats.map(pokeStas => pokeStas.stat.name));//
-
-
 }
 
 function createPokemonObject(data, index) {
@@ -159,33 +141,49 @@ function createPokemonObject(data, index) {
 }
 
 function generateTypesHTML(typesArray) {
-    return typesArray
-        .map(type => `<span class="type type-${type}">${type}</span>`)
-        .join("");
+    return typesArray.map(type => `<span class="type type-${type}">${type}</span>`).join("");
 }
 
 function generateAboutTemplate(about) {
     return `
-            <p>Height: ${about.height}</p>
-            <p>Weight: ${about.weight}</p>
-            <p>Base Experience: ${about.experience}</p>
-            <p>Abilities: ${about.abilities.join(", ")}</p>
-    `
+        <p>Height: ${about.height}</p>
+        <p>Weight: ${about.weight}</p>
+        <p>Base Experience: ${about.experience}</p>
+        <p>Abilities: ${about.abilities.join(", ")}</p>
+    `;
 }
 
 function generateStatsHTML(statsArray) {
-    return statsArray
-        .map(stat => `
-            <div class="stat-row">
-                <span class="stat-name">${stat.name}</span>
-                <span class="stat-value">${stat.value}</span>
-            </div>
-        `)
-        .join("");
+    return statsArray.map(stat => statsItemHTML(stat)).join("");
+}
+
+function statsItemHTML(stat) {
+    return `
+        <div class="stat-row">
+            <span class="stat-name">${stat.name}</span>
+            <span class="stat-value">${stat.value}</span>
+        </div>`
 }
 
 function generateEvolutionTemplate(evoChain) {
-return evoChain.map(name => `<p>${name.charAt(0).toUpperCase() + name.slice(1)}</p>`).join("");
+    return evoChain.map(name => {
+        const evoPokemon = loadPokemonChainImg(name);
+
+        if (!evoPokemon) {
+            return '';
+        } else {
+            return evolutionItemHTML(evoPokemon);
+        }
+    }).join('');
+}
+
+function evolutionItemHTML(pokemon) {
+    return `
+            <div class="evolution-item">
+                <img src="${pokemon.image}" alt="${pokemon.name}">
+                <p>${pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}</p>
+            </div>
+        `;
 }
 
 function showTab(tabId) {
@@ -204,6 +202,7 @@ async function loadPokeChain(data) {
     let pokeSpeciesFetch = await response.json();
     let evoChainFetch = await fetch(pokeSpeciesFetch.evolution_chain.url);
     let evoChain = await evoChainFetch.json();
+
     return createPokeChain(evoChain);
 }
 
@@ -213,27 +212,24 @@ function createPokeChain(evoChain) {
 
     while (current) {
         chainNames.push(current.species.name);
-
-        if (current.evolves_to.length > 0) {
-            current = current.evolves_to[0];
-        } else {
-            current = null;
-        }
+        current = current.evolves_to.length > 0 ? current.evolves_to[0] : null;
     }
     return chainNames;
 }
 
-function loadPokemonChainImg(selectedPokemon) {
+function loadPokemonChainImg(pokemonName) {
     for (let i = 0; i < allPokemon.length; i++) {
         const pokemon = allPokemon[i];
-        
-        if (pokemon.name === selectedPokemon) {
-            return pokemon
-        }
-}
+        if (pokemon.name === pokemonName) return pokemon;
+    }
 }
 
+function showSpinner() {
+  document.getElementById("loading-spinner").classList.add("show");
+}
 
-
+function hideSpinner() {
+  document.getElementById("loading-spinner").classList.remove("show");
+}
 
 
