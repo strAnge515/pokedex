@@ -9,10 +9,29 @@
 </head>
 
 <body onload="init()">
+    <header>
+        <section>
+            <img class="img-header" src="./assets/Pokédex_logo.png" alt="Überschrift">
+            <div>
+                <form action="">
+                    <input id="input" placeholder="Pokémon suchen" type="text">
+                    <button>search</button>
+                </form>
+            </div>
 
+        </section>
+    </header>
+    <main>
+        <div id="content"></div>
+
+      
+    </main>
+    <footer>
+
+    </footer>
     <div id="content"></div>
 
-    <button onclick="loadNextBatch()" id="load-more">Load More</button>
+    <button onclick="renderPokemon()" id="load-more">Load More</button>
 
     <div id="loading-spinner">
         <div class="pokeball"></div>

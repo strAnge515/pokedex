@@ -1,36 +1,63 @@
 let allPokemon = [];
 let startIndex = 0;
-
+let filteredPokemonArr = [];
 const pokemonDialog = document.getElementById('pokemon-dialog');
 const POKEMON_LIST_URL = "https://pokeapi.co/api/v2/pokemon?limit=100&offset=0";
-
+ 
+ 
 
 async function init() {
     showSpinner();
-    const response = await fetch(POKEMON_LIST_URL);
-    const data = await response.json();
-    allPokemon = data.results; 
-    await loadNextBatch();
+    await getPokemon();
+    await renderPokemon();
     hideSpinner();
 }
 
-async function loadPokemonDetailsIfNeeded(pokemon, index) {
+function filterPokemon(allPokemon, searchText) {
+    let filteredPokemonArr = allPokemon.filter(pokemon => 
+        pokemon.name.includes(searchText)
+    );
+    console.log(filteredPokemonArr);
+}
+
+    // filter über allPokemon laufen lassen => gibt neues array zurück
+    // filter nur , wenn min 3 buchstaben getippt sind
+    // alle Pokemon rendern lassen => echtzeitfilter?
+    // => eventlistener bauen, der auf input hört im filter feld
+    // => if bedingung (3 buchstaben oder mehr)
+    // => if bedingung (wenn filter leer ist allPokemon laden)
+
+
+
+async function getPokemon() {
+    const response = await fetch(POKEMON_LIST_URL);
+    const data = await response.json();
+    allPokemon = data.results;
+    filterPokemon(allPokemon, "saur");
+    
+  
+ 
+}
+
+async function loadPokemonDetails(pokemon, index) {
     if (!pokemon.image) {
         let response = await fetch(pokemon.url);
         let data = await response.json();
         let detailedPokemon = createPokemonObject(data, index);
         detailedPokemon.evoChain = await loadPokeChain(data);
         allPokemon[index] = detailedPokemon;
+
+
     }
 }
 
-async function loadNextBatch() {
+async function renderPokemon() {
     showSpinner();
     const content = document.getElementById("content");
     const batchSize = 20;
     let endIndex = Math.min(startIndex + batchSize, allPokemon.length);
     for (let i = startIndex; i < endIndex; i++) {
-        await loadPokemonDetailsIfNeeded(allPokemon[i], i);
+        await loadPokemonDetails(allPokemon[i], i);
         content.innerHTML += genrateTemplate(i);
     }
     startIndex = endIndex;
@@ -94,7 +121,7 @@ function generateDialogTemplate(pokemon) {
 
 async function openDialog(index) {
     pokemonDialog.showModal();
-    await loadPokemonDetailsIfNeeded(allPokemon[index], index);
+    await loadPokemonDetails(allPokemon[index], index);
     const pokemon = allPokemon[index];
     dialogContent(pokemon);
 }
@@ -225,11 +252,13 @@ function loadPokemonChainImg(pokemonName) {
 }
 
 function showSpinner() {
-  document.getElementById("loading-spinner").classList.add("show");
+    document.getElementById("loading-spinner").classList.add("show");
 }
 
 function hideSpinner() {
-  document.getElementById("loading-spinner").classList.remove("show");
+    document.getElementById("loading-spinner").classList.remove("show");
 }
+
+
 
 
