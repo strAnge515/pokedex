@@ -3,8 +3,8 @@ let startIndex = 0;
 let filteredPokemonArr = [];
 const pokemonDialog = document.getElementById('pokemon-dialog');
 const POKEMON_LIST_URL = "https://pokeapi.co/api/v2/pokemon?limit=100&offset=0";
- 
- 
+
+
 
 async function init() {
     showSpinner();
@@ -13,30 +13,60 @@ async function init() {
     hideSpinner();
 }
 
-function filterPokemon(allPokemon, searchText) {
-    let filteredPokemonArr = allPokemon.filter(pokemon => 
-        pokemon.name.includes(searchText)
-    );
-    console.log(filteredPokemonArr);
+async function renderPokemon() {
+    showSpinner();
+    const array = filteredPokemonArr.length ? filteredPokemonArr : allPokemon;
+    filteredPokemonArr.length
+        ? await renderFiltered(array)
+        : await renderBatch(array);
+
+    hideSpinner();
 }
 
-    // filter über allPokemon laufen lassen => gibt neues array zurück
-    // filter nur , wenn min 3 buchstaben getippt sind
-    // alle Pokemon rendern lassen => echtzeitfilter?
-    // => eventlistener bauen, der auf input hört im filter feld
-    // => if bedingung (3 buchstaben oder mehr)
-    // => if bedingung (wenn filter leer ist allPokemon laden)
+async function renderBatch(array) {
+    const content = document.getElementById("content");
+    const batchSize = 20;
+    let endIndex = Math.min(startIndex + batchSize, array.length);
+    for (let i = startIndex; i < endIndex; i++) {
+        await loadPokemonDetails(array[i], i);
+        content.innerHTML += genrateTemplate(array[i]);
+    }
+    startIndex = endIndex;
+    document.getElementById("load-more").style.display =
+        startIndex >= array.length ? "none" : "block";
+}
 
+function filterPokemon(allPokemon, searchText) {
+    return allPokemon.filter(pokemon =>
+        pokemon.name.includes(searchText));
+}
 
+function searchPokemon() {
+    const searchInput = document.getElementById("search-input");
+    const text = searchInput.value.toLowerCase();
+    if (text.length >= 3) {
+        filteredPokemonArr = filterPokemon(allPokemon, text);
+    } else {
+        filteredPokemonArr = [];
+        startIndex = 0; 
+    }
+    renderPokemon();
+}
+
+async function renderFiltered(array) {
+    const content = document.getElementById("content");
+    content.innerHTML = "";
+    for (let i = 0; i < array.length; i++) {
+        await loadPokemonDetails(array[i], i);
+        content.innerHTML += genrateTemplate(array[i]);
+    }
+    document.getElementById("load-more").style.display = "none";
+}
 
 async function getPokemon() {
     const response = await fetch(POKEMON_LIST_URL);
     const data = await response.json();
     allPokemon = data.results;
-    filterPokemon(allPokemon, "saur");
-    
-  
- 
 }
 
 async function loadPokemonDetails(pokemon, index) {
@@ -46,44 +76,40 @@ async function loadPokemonDetails(pokemon, index) {
         let detailedPokemon = createPokemonObject(data, index);
         detailedPokemon.evoChain = await loadPokeChain(data);
         allPokemon[index] = detailedPokemon;
-
-
     }
 }
 
-async function renderPokemon() {
-    showSpinner();
-    const content = document.getElementById("content");
-    const batchSize = 20;
-    let endIndex = Math.min(startIndex + batchSize, allPokemon.length);
-    for (let i = startIndex; i < endIndex; i++) {
-        await loadPokemonDetails(allPokemon[i], i);
-        content.innerHTML += genrateTemplate(i);
-    }
-    startIndex = endIndex;
+async function loadPokemonDetails(pokemon, index) {
+    if (!pokemon.image) {
+        const response = await fetch(pokemon.url);
+        const data = await response.json();
+        const detailedPokemon = createPokemonObject(data);
+        detailedPokemon.evoChain = await loadPokeChain(data);
 
-    if (startIndex >= allPokemon.length) {
-        document.getElementById("load-more").style.display = "none";
+        // Alle Properties vom detaillierten Pokémon ins Original kopieren
+        for (let key in detailedPokemon) {
+            pokemon[key] = detailedPokemon[key];
+        }
+
+        // Optional: Array aktualisieren (Index wird beibehalten)
+        allPokemon[index] = pokemon;
     }
-    hideSpinner();
 }
 
-
-
-function genrateTemplate(i) {
+function genrateTemplate(pokemon) {
     return `
-        <article onclick="openDialog(${i})" class="pokemon-card" data-id="${i}">
+        <article onclick="openDialog(${pokemon.id})" class="pokemon-card" data-id="${pokemon.id}">
             <header class="card-header">
-                <h2 class="pokemon-name">${allPokemon[i].name}</h2>
-                <span class="pokemon-id">#${formatedId(i)}</span>
+                <h2 class="pokemon-name">${pokemon.name}</h2>
+                <span class="pokemon-id">#${pokemon.id}</span>
             </header>
 
-            <main class="card-main type-${allPokemon[i].types[0]}">
-                <img src="${allPokemon[i].image}" alt="${allPokemon[i].name}" class="pokemon-image">
+            <main class="card-main type-${pokemon.types[0]}">
+                <img src="${pokemon.image}" alt="${pokemon.name}" class="pokemon-image">
             </main>
 
             <footer class="card-footer">
-                ${generateTypesHTML(allPokemon[i].types)}
+                ${generateTypesHTML(pokemon.types)}
             </footer>
         </article>`;
 }
@@ -119,10 +145,11 @@ function generateDialogTemplate(pokemon) {
         </section>`;
 }
 
-async function openDialog(index) {
+async function openDialog(id) {
+    const pokemon = allPokemon.find(pokemon => pokemon.id === id);
+    if (!pokemon) return;
     pokemonDialog.showModal();
-    await loadPokemonDetails(allPokemon[index], index);
-    const pokemon = allPokemon[index];
+    await loadPokemonDetails(pokemon, id - 1);
     dialogContent(pokemon);
 }
 
@@ -141,14 +168,13 @@ pokemonDialog.addEventListener('click', (event) => {
     }
 });
 
-
 function formatedId(number) {
     return (number + 1).toString().padStart(3, "0");
 }
 
-function createPokemonObject(data, index) {
+function createPokemonObject(data) {
     return {
-        id: index + 1,
+        id: data.id,
         name: data.name,
         image: data.sprites.other["official-artwork"].front_default,
         types: data.types.map(pokeType => pokeType.type.name),
@@ -193,15 +219,14 @@ function statsItemHTML(stat) {
 }
 
 function generateEvolutionTemplate(evoChain) {
-    return evoChain.map(name => {
+    let html = '';
+    for (let name of evoChain) {
         const evoPokemon = loadPokemonChainImg(name);
-
-        if (!evoPokemon) {
-            return '';
-        } else {
-            return evolutionItemHTML(evoPokemon);
+        if (evoPokemon) {
+            html += evolutionItemHTML(evoPokemon);
         }
-    }).join('');
+    }
+    return html;
 }
 
 function evolutionItemHTML(pokemon) {
@@ -229,7 +254,6 @@ async function loadPokeChain(data) {
     let pokeSpeciesFetch = await response.json();
     let evoChainFetch = await fetch(pokeSpeciesFetch.evolution_chain.url);
     let evoChain = await evoChainFetch.json();
-
     return createPokeChain(evoChain);
 }
 
