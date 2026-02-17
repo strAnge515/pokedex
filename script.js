@@ -1,4 +1,5 @@
 let allPokemon = [];
+let currentPokemonIndex = 0;
 let startIndex = 0;
 let filteredPokemonArr = [];
 const pokemonDialog = document.getElementById('pokemon-dialog');
@@ -29,7 +30,7 @@ async function renderBatch(array) {
     let endIndex = Math.min(startIndex + batchSize, array.length);
     for (let i = startIndex; i < endIndex; i++) {
         await loadPokemonDetails(array[i], i);
-        content.innerHTML += genrateTemplate(array[i]);
+        content.innerHTML += genrateTemplate(array[i], i);
     }
     startIndex = endIndex;
     document.getElementById("load-more").style.display =
@@ -48,7 +49,7 @@ function searchPokemon() {
         filteredPokemonArr = filterPokemon(allPokemon, text);
     } else {
         filteredPokemonArr = [];
-        startIndex = 0; 
+        startIndex = 0;
     }
     renderPokemon();
 }
@@ -58,7 +59,7 @@ async function renderFiltered(array) {
     content.innerHTML = "";
     for (let i = 0; i < array.length; i++) {
         await loadPokemonDetails(array[i], i);
-        content.innerHTML += genrateTemplate(array[i]);
+        content.innerHTML += genrateTemplate(array[i], i);
     }
     document.getElementById("load-more").style.display = "none";
 }
@@ -71,34 +72,20 @@ async function getPokemon() {
 
 async function loadPokemonDetails(pokemon, index) {
     if (!pokemon.image) {
-        let response = await fetch(pokemon.url);
-        let data = await response.json();
-        let detailedPokemon = createPokemonObject(data, index);
-        detailedPokemon.evoChain = await loadPokeChain(data);
-        allPokemon[index] = detailedPokemon;
-    }
-}
-
-async function loadPokemonDetails(pokemon, index) {
-    if (!pokemon.image) {
         const response = await fetch(pokemon.url);
         const data = await response.json();
         const detailedPokemon = createPokemonObject(data);
         detailedPokemon.evoChain = await loadPokeChain(data);
-
-        // Alle Properties vom detaillierten Pokémon ins Original kopieren
         for (let key in detailedPokemon) {
             pokemon[key] = detailedPokemon[key];
         }
-
-        // Optional: Array aktualisieren (Index wird beibehalten)
         allPokemon[index] = pokemon;
     }
 }
 
-function genrateTemplate(pokemon) {
-    return `
-        <article onclick="openDialog(${pokemon.id})" class="pokemon-card" data-id="${pokemon.id}">
+function genrateTemplate(pokemon, index) {
+    return /*inline-template*/`
+         <article onclick="openDialog(${index})" class="pokemon-card" data-id="${pokemon.id}">
             <header class="card-header">
                 <h2 class="pokemon-name">${pokemon.name}</h2>
                 <span class="pokemon-id">#${pokemon.id}</span>
@@ -115,24 +102,26 @@ function genrateTemplate(pokemon) {
 }
 
 function generateDialogTemplate(pokemon) {
-    return `
-        <header class="dialog-header">
+    return  /*inline-template*/`
+    <div class="dialog-inner">
+        <header class="dialog-header type-${pokemon.types[0]}">
             <button onclick="closeDialog()" class="back-button" aria-label="Close dialog">←</button>
             <h2 class="dialog-pokemon-name">${pokemon.name}</h2>
-            <span class="dialog-pokemon-id">${formatedId(pokemon.id - 1)}</span>
+            <span class="dialog-pokemon-id">#${formatedId(pokemon.id - 1)}</span>
         </header>
 
-        <section class="dialog-hero">
-            <img src="${pokemon.image}" alt="${pokemon.name}" class="dialog-pokemon-image type-${pokemon.types[0]}">
+        <section class="dialog-hero type-${pokemon.types[0]}">
+            <button class="button-left button" onclick="previous()">&#8592;</button>
+            <img src="${pokemon.image}" alt="${pokemon.name}" class="dialog-pokemon-image ">
+            <button class="button-right button" onclick="next()">&#8594;</button>
         </section>
 
-        <nav class="dialog-tabs">
-            <button class="tab active" onclick="showTab('about')">About</button>
-            <button class="tab" onclick="showTab('stats')">Base Stats</button>
-            <button class="tab" onclick="showTab('evolution')">Evolution</button>
-        </nav>
-
         <section class="dialog-tab-content">
+             <nav class="dialog-tabs">
+                <button class="tab active" onclick="showTab('about')">About</button>
+                <button class="tab" onclick="showTab('stats')">Base Stats</button>
+                <button class="tab" onclick="showTab('evolution')">Evolution</button>
+            </nav>
             <div class="tab-panel active" id="about">
                 ${generateAboutTemplate(pokemon.about)}
             </div>
@@ -140,16 +129,24 @@ function generateDialogTemplate(pokemon) {
                 ${generateStatsHTML(pokemon.stats)}
             </div>
             <div class="tab-panel" id="evolution">
-                ${generateEvolutionTemplate(pokemon.evoChain)}
+                <div class="tab-panel-inner">
+                    ${generateEvolutionTemplate(pokemon.evoChain)}
+                </div>
             </div>
-        </section>`;
+        </section>
+    </div>`;
 }
 
-async function openDialog(id) {
-    const pokemon = allPokemon.find(pokemon => pokemon.id === id);
+async function openDialog(index) {
+    const activeArray = filteredPokemonArr.length
+        ? filteredPokemonArr
+        : allPokemon;
+    currentPokemonIndex = index;
+    const pokemon = activeArray[index];
     if (!pokemon) return;
     pokemonDialog.showModal();
-    await loadPokemonDetails(pokemon, id - 1);
+    const globalIndex = allPokemon.findIndex(pokemon => pokemon.id === pokemon.id);
+    await loadPokemonDetails(pokemon, globalIndex);
     dialogContent(pokemon);
 }
 
@@ -160,6 +157,8 @@ function closeDialog() {
 function dialogContent(pokemon) {
     let dialogContent = document.getElementById('pokemon-dialog');
     dialogContent.innerHTML = generateDialogTemplate(pokemon);
+    console.log(pokemon);
+
 }
 
 pokemonDialog.addEventListener('click', (event) => {
@@ -193,16 +192,34 @@ function createPokemonObject(data) {
     };
 }
 
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 function generateTypesHTML(typesArray) {
     return typesArray.map(type => `<span class="type type-${type}">${type}</span>`).join("");
 }
 
 function generateAboutTemplate(about) {
     return `
-        <p>Height: ${about.height}</p>
-        <p>Weight: ${about.weight}</p>
-        <p>Base Experience: ${about.experience}</p>
-        <p>Abilities: ${about.abilities.join(", ")}</p>
+      <dl class="pokemon-about">
+        <div>
+          <dt>Height:</dt>
+          <dd>${about.height}</dd>
+        </div>
+        <div>
+          <dt>Weight:</dt>
+          <dd>${about.weight}</dd>
+        </div>
+        <div>
+          <dt>Base Experience:</dt>
+          <dd>${about.experience}</dd>
+        </div>
+        <div>
+          <dt>Abilities:</dt>
+          <dd>${about.abilities.map(capitalize).join(", ")}</dd>
+        </div>
+      </dl>
     `;
 }
 
@@ -283,6 +300,22 @@ function hideSpinner() {
     document.getElementById("loading-spinner").classList.remove("show");
 }
 
+function next() {
+    const activeArray = filteredPokemonArr.length
+        ? filteredPokemonArr
+        : allPokemon;
 
+    if (currentPokemonIndex < activeArray.length - 1) {
+        currentPokemonIndex++;
+        openDialog(currentPokemonIndex);
+    }
+}
+
+function previous() {
+    if (currentPokemonIndex > 0) {
+        currentPokemonIndex--;
+        openDialog(currentPokemonIndex);
+    }
+}
 
 
