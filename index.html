@@ -9,11 +9,11 @@
 </head>
 
 <body onload="init()">
-    <header>
+    <header class="content-header">
         <section>
             <img class="img-header" src="./assets/Pokédex_logo.png" alt="Überschrift">
             <div>
-                <form action="">
+                <form id="search-form" action="">
                     <input id="search-input" placeholder="Pokémon suchen" type="text">
                     <button type="button" id="search-btn" onclick="searchPokemon()">search</button>
                 </form>
@@ -47,5 +47,6 @@
     </div>
 </dialog>
 <script src="script.js"></script>
+<script src="template.js"></script>
 
 </html>

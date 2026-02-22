@@ -2,95 +2,88 @@ let allPokemon = [];
 let currentPokemonIndex = 0;
 let startIndex = 0;
 let filteredPokemonArr = [];
+const BATCH_SIZE = 20;
+const MAX_POKEMON = 151;
 const pokemonDialog = document.getElementById('pokemon-dialog');
-const POKEMON_LIST_URL = "https://pokeapi.co/api/v2/pokemon?limit=100&offset=0";
 const content = document.getElementById("content");
 
-
-
+// Initializes the app: fetches all pokemon names, renders the first batch
 async function init() {
-
     showSpinner();
-    await getPokemon();
+    await fetchAllNames();
     await renderPokemon();
     hideSpinner();
 }
 
-async function renderPokemon() {
-    showSpinner();
-    const array = filteredPokemonArr.length ? filteredPokemonArr : allPokemon;
-    filteredPokemonArr.length && (content.innerHTML = ""); /* if (filteredPokemonArr.length) {
-    content.innerHTML = "";} */ 
-    await renderArray(array, filteredPokemonArr.length);
-    document.getElementById("load-more").style.display =
-        !filteredPokemonArr.length && startIndex < array.length ? "block" : "none";
-    hideSpinner();
-}
-
-async function renderArray(array, isFiltered) {
-    let end = isFiltered ? array.length : Math.min(startIndex + 20, array.length);
-    for (let i = 0; i < end; i++) {
-        const globalIndex = allPokemon.findIndex(pokemon => pokemon.name === array[i].name);
-        await loadPokemonDetails(array[i], globalIndex);
-        content.innerHTML += genrateTemplate(array[i], globalIndex);
-    }
-    !isFiltered && (startIndex = end); /*if (!isFiltered) startIndex = end; */
-}
-
-
-async function renderBatch(array) {
-
-
-    const batchSize = 20;
-    let endIndex = Math.min(startIndex + batchSize, array.length);
-    for (let i = startIndex; i < endIndex; i++) {
-        await loadPokemonDetails(array[i], i);
-        content.innerHTML += genrateTemplate(array[i], i);
-    }
-    startIndex = endIndex;
-    document.getElementById("load-more").style.display =
-        startIndex >= array.length ? "none" : "block";
-}
-
-function filterPokemon(allPokemon, searchText) {
-    return allPokemon.filter(pokemon =>
-        pokemon.name.includes(searchText));
-
-
-}
-
-function searchPokemon() {
-     const searchInput = document.getElementById("search-input");
-    const text = document.getElementById("search-input").value.toLowerCase();
-    if (text.length >= 3) {
-        filteredPokemonArr = allPokemon.filter(p => p.name.includes(text));
-    } else {
-        filteredPokemonArr = [];
-        startIndex = 0;
-        document.getElementById("content").innerHTML = "";
-    }
-    renderPokemon();
-    searchInput.value = "";
-}
-
-async function renderFiltered(array) {
-
-    content.innerHTML = "";
-    for (let i = 0; i < array.length; i++) {
-        const pokemon = array[i];
-        const globalIndex = allPokemon.findIndex(p => p.name === pokemon.name);
-        await loadPokemonDetails(array[i], i);
-        content.innerHTML += genrateTemplate(pokemon, globalIndex);
-    }
-    document.getElementById("load-more").style.display = "none";
-}
-
-async function getPokemon() {
-    const response = await fetch(POKEMON_LIST_URL);
+// Fetches all pokemon names from the API and stores them in allPokemon
+async function fetchAllNames() {
+    const url = `https://pokeapi.co/api/v2/pokemon?limit=${MAX_POKEMON}&offset=0`;
+    const response = await fetch(url);
     const data = await response.json();
     allPokemon = data.results;
 }
 
+// Decides whether to render filtered results or the next batch
+async function renderPokemon() {
+    showSpinner();
+    if (filteredPokemonArr.length) {
+        await renderFiltered(filteredPokemonArr);
+    } else {
+        await renderBatch();
+    }
+    hideSpinner();
+}
+
+// Fetches and renders the next 20 pokemon using limit/offset, updates the load-more button
+async function renderBatch() {
+    const end = Math.min(startIndex + BATCH_SIZE, MAX_POKEMON);
+    const url = `https://pokeapi.co/api/v2/pokemon?limit=${end - startIndex}&offset=${startIndex}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    await appendPokemonCards(data.results, startIndex);
+    startIndex = end;
+    document.getElementById("load-more").style.display =
+        startIndex >= MAX_POKEMON ? "none" : "block";
+}
+
+// Loads details for each pokemon in a batch and appends their cards to the grid
+async function appendPokemonCards(batch, offsetIndex) {
+    for (let i = 0; i < batch.length; i++) {
+        const globalIndex = offsetIndex + i;
+        const pokemon = allPokemon[globalIndex];
+        await loadPokemonDetails(pokemon, globalIndex);
+        content.innerHTML += genrateTemplate(pokemon, globalIndex);
+    }
+}
+
+// Clears the grid and renders only the pokemon matching the current search
+async function renderFiltered(array) {
+    content.innerHTML = "";
+    for (let i = 0; i < array.length; i++) {
+        const globalIndex = allPokemon.findIndex((pokemon) => pokemon.name === array[i].name);
+        await loadPokemonDetails(array[i], globalIndex);
+        content.innerHTML += genrateTemplate(array[i], globalIndex);
+    }
+    document.getElementById("load-more").style.display = "none";
+}
+
+// Reads the search input, filters allPokemon by name and triggers a re-render
+function searchPokemon() {
+    const searchInput = document.getElementById("search-input");
+    const text = searchInput.value.toLowerCase().trim();
+    if (text.length >= 3) {
+        filteredPokemonArr = allPokemon.filter((pokemon) => pokemon.name.includes(text));
+        renderPokemon();
+    } else {
+        filteredPokemonArr = [];
+        content.innerHTML = "";
+        startIndex = 0;
+        renderPokemon();
+    }
+    searchInput.value = "";
+}
+
+// Fetches full details for a pokemon if not already loaded, enriches the allPokemon entry
 async function loadPokemonDetails(pokemon, index) {
     if (!pokemon.image) {
         const response = await fetch(pokemon.url);
@@ -100,106 +93,56 @@ async function loadPokemonDetails(pokemon, index) {
         for (let key in detailedPokemon) {
             pokemon[key] = detailedPokemon[key];
         }
-        allPokemon[index] = pokemon;
+        allPokemon[index] = pokemon; // <-- jetzt hier, vor dem Loop
+       for (let i = 0; i < detailedPokemon.evoChain.length; i++) {
+    const name = detailedPokemon.evoChain[i];
+    const evoIndex = allPokemon.findIndex((element) => element.name === name);
+    if (evoIndex !== -1) {
+        const evoPokemon = allPokemon[evoIndex];
+        await loadPokemonDetails(evoPokemon, evoIndex);
     }
+}}
 }
 
-function genrateTemplate(pokemon, index) {
-    return /*inline-template*/`
-         <article onclick="openDialog(${index})" class="pokemon-card" data-id="${pokemon.id}">
-            <header class="card-header">
-                <h2 class="pokemon-name">${pokemon.name}</h2>
-                <span class="pokemon-id">#${pokemon.id}</span>
-            </header>
-
-            <main class="card-main type-${pokemon.types[0]}">
-                <img src="${pokemon.image}" alt="${pokemon.name}" class="pokemon-image">
-            </main>
-
-            <footer class="card-footer">
-                ${generateTypesHTML(pokemon.types)}
-            </footer>
-        </article>`;
-}
-
-function generateDialogTemplate(pokemon) {
-    return  /*inline-template*/`
-    <div class="dialog-inner">
-        <header class="dialog-header type-${pokemon.types[0]}">
-            <button onclick="closeDialog()" class="back-button" aria-label="Close dialog">←</button>
-            <h2 class="dialog-pokemon-name">${pokemon.name}</h2>
-            <span class="dialog-pokemon-id">#${formatedId(pokemon.id - 1)}</span>
-        </header>
-
-        <section class="dialog-hero type-${pokemon.types[0]}">
-            <button class="button-left button" onclick="previous()">&#8592;</button>
-            <img src="${pokemon.image}" alt="${pokemon.name}" class="dialog-pokemon-image ">
-            <button class="button-right button" onclick="next()">&#8594;</button>
-        </section>
-
-        <section class="dialog-tab-content">
-             <nav class="dialog-tabs">
-                <button class="tab active" onclick="showTab('about')">About</button>
-                <button class="tab" onclick="showTab('stats')">Base Stats</button>
-                <button class="tab" onclick="showTab('evolution')">Evolution</button>
-            </nav>
-            <div class="tab-panel active" id="about">
-                ${generateAboutTemplate(pokemon.about)}
-            </div>
-            <div class="tab-panel" id="stats">
-                ${generateStatsHTML(pokemon.stats)}
-            </div>
-            <div class="tab-panel" id="evolution">
-                <div class="tab-panel-inner">
-                    ${generateEvolutionTemplate(pokemon.evoChain)}
-                </div>
-            </div>
-        </section>
-    </div>`;
-}
-
+// Loads pokemon details if needed, then opens and populates the dialog
 async function openDialog(index) {
-    const activeArray = filteredPokemonArr.length
-        ? filteredPokemonArr
-        : allPokemon;
     currentPokemonIndex = index;
-    const pokemon = activeArray[index];
+    const pokemon = allPokemon[index];
     if (!pokemon) return;
+    await loadPokemonDetails(pokemon, index);
     pokemonDialog.showModal();
-    const globalIndex = allPokemon.findIndex(pokemon => pokemon.id === pokemon.id);
-    await loadPokemonDetails(pokemon, globalIndex);
     dialogContent(pokemon);
 }
 
+// Closes the pokemon detail dialog
 function closeDialog() {
     pokemonDialog.close();
 }
 
+// Injects the dialog HTML for the given pokemon into the dialog element
 function dialogContent(pokemon) {
-    let dialogContent = document.getElementById('pokemon-dialog');
-    dialogContent.innerHTML = generateDialogTemplate(pokemon);
-    console.log(pokemon);
-
+    pokemonDialog.innerHTML = generateDialogTemplate(pokemon);
 }
 
+// Closes the dialog when clicking on the backdrop
 pokemonDialog.addEventListener('click', (event) => {
-    if (event.target === pokemonDialog) {
-        pokemonDialog.close();
-    }
+    if (event.target === pokemonDialog) pokemonDialog.close();
 });
 
+// Formats a zero-based index into a zero-padded 3-digit ID string
 function formatedId(number) {
     return (number + 1).toString().padStart(3, "0");
 }
 
+// Maps raw API data into a clean, structured pokemon object
 function createPokemonObject(data) {
     return {
         id: data.id,
         name: data.name,
         image: data.sprites.other["official-artwork"].front_default,
-        types: data.types.map(pokeType => pokeType.type.name),
-        abilities: data.abilities.map(pokeAbility => pokeAbility.ability.name),
-        stats: data.stats.map(stat => ({
+        types: data.types.map((pokeType) => pokeType.type.name),
+        abilities: data.abilities.map((ability) => ability.ability.name),
+        stats: data.stats.map((stat) => ({
             name: stat.stat.name.toUpperCase(),
             value: stat.base_stat
         })),
@@ -207,98 +150,58 @@ function createPokemonObject(data) {
             height: data.height,
             weight: data.weight,
             experience: data.base_experience,
-            abilities: data.abilities.map(pokeAbility => pokeAbility.ability.name)
+            abilities: data.abilities.map((ability) => ability.ability.name)
         },
         evoChain: []
     };
 }
 
+// Capitalizes the first letter of a string
 function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// Returns HTML badge spans for each pokemon type
 function generateTypesHTML(typesArray) {
-    return typesArray.map(type => `<span class="type type-${type}">${type}</span>`).join("");
+    return typesArray.map((type) => `<span class="type type-${type}">${type}</span>`).join("");
 }
 
-function generateAboutTemplate(about) {
-    return `
-      <dl class="pokemon-about">
-        <div>
-          <dt>Height:</dt>
-          <dd>${about.height}</dd>
-        </div>
-        <div>
-          <dt>Weight:</dt>
-          <dd>${about.weight}</dd>
-        </div>
-        <div>
-          <dt>Base Experience:</dt>
-          <dd>${about.experience}</dd>
-        </div>
-        <div>
-          <dt>Abilities:</dt>
-          <dd>${about.abilities.map(capitalize).join(", ")}</dd>
-        </div>
-      </dl>
-    `;
-}
-
+// Returns the HTML for all stat rows
 function generateStatsHTML(statsArray) {
-    return statsArray.map(stat => statsItemHTML(stat)).join("");
+    return statsArray.map((stat) => statsItemHTML(stat)).join("");
 }
 
-function statsItemHTML(stat) {
-    return `
-        <div class="stat-row">
-            <span class="stat-name">${stat.name}</span>
-            <span class="stat-value">${stat.value}</span>
-        </div>`
-}
-
+// Returns the HTML for the full evolution chain section
 function generateEvolutionTemplate(evoChain) {
     let html = '';
     for (let name of evoChain) {
         const evoPokemon = loadPokemonChainImg(name);
-        if (evoPokemon) {
-            html += evolutionItemHTML(evoPokemon);
-        }
+        if (evoPokemon) html += evolutionItemHTML(evoPokemon);
     }
     return html;
 }
 
-function evolutionItemHTML(pokemon) {
-    return `
-            <div class="evolution-item">
-                <img src="${pokemon.image}" alt="${pokemon.name}">
-                <p>${pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}</p>
-            </div>
-        `;
-}
-
+// Activates the clicked tab and hides all others
 function showTab(tabId) {
-    const tabs = document.querySelectorAll('.dialog-tabs .tab');
-    const panels = document.querySelectorAll('.tab-panel');
-
-    tabs.forEach(tab => tab.classList.remove('active'));
-    panels.forEach(panel => panel.classList.remove('active'));
-
+    document.querySelectorAll('.dialog-tabs .tab').forEach((tab) => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach((panel) => panel.classList.remove('active'));
     document.querySelector(`.tab-panel#${tabId}`).classList.add('active');
     document.querySelector(`.dialog-tabs .tab[onclick="showTab('${tabId}')"]`).classList.add('active');
 }
 
+// Fetches the species and evolution chain data for a pokemon from the API
 async function loadPokeChain(data) {
-    let response = await fetch(data.species.url);
-    let pokeSpeciesFetch = await response.json();
-    let evoChainFetch = await fetch(pokeSpeciesFetch.evolution_chain.url);
-    let evoChain = await evoChainFetch.json();
-    return createPokeChain(evoChain);
+    const speciesRes = await fetch(data.species.url);
+    const speciesData = await speciesRes.json();
+    const evoRes = await fetch(speciesData.evolution_chain.url);
+    const evoData = await evoRes.json();
+    return createPokeChain(evoData);
 }
 
+// Walks the evolution chain and returns an ordered array of species names
 function createPokeChain(evoChain) {
     let chainNames = [];
     let current = evoChain.chain;
-
     while (current) {
         chainNames.push(current.species.name);
         current = current.evolves_to.length > 0 ? current.evolves_to[0] : null;
@@ -306,37 +209,39 @@ function createPokeChain(evoChain) {
     return chainNames;
 }
 
+// Finds and returns a pokemon from allPokemon by its name
 function loadPokemonChainImg(pokemonName) {
-    for (let i = 0; i < allPokemon.length; i++) {
-        const pokemon = allPokemon[i];
-        if (pokemon.name === pokemonName) return pokemon;
-    }
+    return allPokemon.find((pokemon) => pokemon.name === pokemonName);
 }
 
+// Shows the loading spinner
 function showSpinner() {
     document.getElementById("loading-spinner").classList.add("show");
 }
 
+// Hides the loading spinner
 function hideSpinner() {
     document.getElementById("loading-spinner").classList.remove("show");
 }
 
+// Navigates to the next pokemon in the active array and opens its dialog
 function next() {
-    const activeArray = filteredPokemonArr.length
-        ? filteredPokemonArr
-        : allPokemon;
-
+    const activeArray = filteredPokemonArr.length ? filteredPokemonArr : allPokemon;
     if (currentPokemonIndex < activeArray.length - 1) {
         currentPokemonIndex++;
         openDialog(currentPokemonIndex);
     }
 }
 
+// Navigates to the previous pokemon and opens its dialog
 function previous() {
     if (currentPokemonIndex > 0) {
         currentPokemonIndex--;
         openDialog(currentPokemonIndex);
     }
 }
-
-
+// Eventlistener for form tag
+document.getElementById("search-form").addEventListener("submit", function(event) {
+    event.preventDefault();
+    searchPokemon();
+});
