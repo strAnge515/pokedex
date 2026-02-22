@@ -73,14 +73,29 @@ function searchPokemon() {
     const text = searchInput.value.toLowerCase().trim();
     if (text.length >= 3) {
         filteredPokemonArr = allPokemon.filter((pokemon) => pokemon.name.includes(text));
-        renderPokemon();
+        if (filteredPokemonArr.length === 0) {
+            handleNoMatch();
+        } else {
+            renderPokemon();
+        }
     } else {
-        filteredPokemonArr = [];
-        content.innerHTML = "";
-        startIndex = 0;
-        renderPokemon();
+        reset()
     }
     searchInput.value = "";
+}
+
+// set filter, startindex and arr back to 0
+function reset() {
+    filteredPokemonArr = [];
+    content.innerHTML = "";
+    startIndex = 0;
+    renderPokemon();
+}
+
+// Function for no matches in search
+function handleNoMatch() {
+    content.innerHTML = "<p>No match found</p>";
+    document.getElementById("load-more").style.display = "none";
 }
 
 // Fetches full details for a pokemon if not already loaded, enriches the allPokemon entry
@@ -93,15 +108,16 @@ async function loadPokemonDetails(pokemon, index) {
         for (let key in detailedPokemon) {
             pokemon[key] = detailedPokemon[key];
         }
-        allPokemon[index] = pokemon; // <-- jetzt hier, vor dem Loop
-       for (let i = 0; i < detailedPokemon.evoChain.length; i++) {
-    const name = detailedPokemon.evoChain[i];
-    const evoIndex = allPokemon.findIndex((element) => element.name === name);
-    if (evoIndex !== -1) {
-        const evoPokemon = allPokemon[evoIndex];
-        await loadPokemonDetails(evoPokemon, evoIndex);
+        allPokemon[index] = pokemon;
+        for (let i = 0; i < detailedPokemon.evoChain.length; i++) {
+            const name = detailedPokemon.evoChain[i];
+            const evoIndex = allPokemon.findIndex((element) => element.name === name);
+            if (evoIndex !== -1) {
+                const evoPokemon = allPokemon[evoIndex];
+                await loadPokemonDetails(evoPokemon, evoIndex);
+            }
+        }
     }
-}}
 }
 
 // Loads pokemon details if needed, then opens and populates the dialog
@@ -112,11 +128,13 @@ async function openDialog(index) {
     await loadPokemonDetails(pokemon, index);
     pokemonDialog.showModal();
     dialogContent(pokemon);
+    document.body.style.overflow = "hidden";
 }
 
 // Closes the pokemon detail dialog
 function closeDialog() {
     pokemonDialog.close();
+     document.body.style.overflow = "";
 }
 
 // Injects the dialog HTML for the given pokemon into the dialog element
@@ -126,8 +144,8 @@ function dialogContent(pokemon) {
 
 // Closes the dialog when clicking on the backdrop
 pokemonDialog.addEventListener('click', (event) => {
-    if (event.target === pokemonDialog) pokemonDialog.close();
-});
+    if (event.target === pokemonDialog) closeDialog();
+   });
 
 // Formats a zero-based index into a zero-padded 3-digit ID string
 function formatedId(number) {
@@ -241,7 +259,7 @@ function previous() {
     }
 }
 // Eventlistener for form tag
-document.getElementById("search-form").addEventListener("submit", function(event) {
+document.getElementById("search-form").addEventListener("submit", function (event) {
     event.preventDefault();
     searchPokemon();
 });

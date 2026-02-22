@@ -491,6 +491,10 @@ dialog::backdrop {
     margin: 10px;
   }
 
+  .dialog-pokemon-name {
+    font-size: 25px;
+  }
+
   .button {
     height: 36px;
     width: 36px;
