@@ -12,7 +12,7 @@
 <body onload="init()">
     <header class="content-header">
         <section>
-            <img class="img-header" src="./assets/Pokédex_logo.png" alt="Überschrift">
+            <img class="img-header" src="./assets/Pokédex_logo.png" alt="Überschrift" onclick="reset()">
             <div>
                 <form id="search-form" action="">
                     <input id="search-input" placeholder="Pokémon suchen" type="text">
@@ -24,7 +24,7 @@
     </header>
     <main>
         <div id="content"></div>
-        <button onclick="renderPokemon()" id="load-more">Load More</button>
+        <button onclick="loadMore()" id="load-more">Load More</button>
 
     </main>
     <footer>

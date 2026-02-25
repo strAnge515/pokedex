@@ -8,8 +8,7 @@ body {
   font-family: sans-serif;
   background: #f4f6fb;
   color: #222;
-  max-width: 1920px;
-  margin: 0 auto;
+    margin: 0 auto;
 }
 
 /* ===== HEADER ===== */
@@ -32,6 +31,11 @@ body {
 .img-header {
   height: 60px;
   object-fit: contain;
+  cursor: pointer;
+}
+
+.img-header:hover {
+  background-color: #639CE4;
 }
 
 #search-form {
@@ -57,7 +61,7 @@ body {
   border: none;
   border-radius: 6px;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: bold;
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   transition: background 0.2s ease, transform 0.1s ease;
@@ -118,7 +122,7 @@ main {
 }
 
 .pokemon-id {
-  font-size: 15px;
+  font-size: 16px;
   color: #666;
 }
 
@@ -144,7 +148,7 @@ main {
 }
 
 .type {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: bold;
   padding: 4px 8px;
   border-radius: 15px;
@@ -406,6 +410,7 @@ dialog::backdrop {
 
 #loading-spinner.show {
   display: flex;
+  pointer-events: auto;
 }
 
 #loading-spinner .pokeball {
@@ -479,6 +484,8 @@ dialog::backdrop {
     top: 50%;
     transform: translate(-50%, -50%);
     border-radius: 20px;
+    max-width: 430px;
+    max-height: 600px;
   }
 
   .dialog-hero {
@@ -519,12 +526,20 @@ dialog::backdrop {
   }
 
   .evolution-item img {
-    height: 60px;
+    height: 78px;
     flex-shrink: 0;
   }
 
   .evolution-item p {
-    font-size: 14px;
+    font-size: 26px;
     word-break: break-word;
+  }
+
+  .button-right {
+    margin-left: 20px;
+  }
+
+  .button-left {
+    margin-right: 20px;
   }
 }

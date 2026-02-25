@@ -10,17 +10,9 @@ const content = document.getElementById("content");
 // Initializes the app: fetches all pokemon names, renders the first batch
 async function init() {
     showSpinner();
-    await fetchAllNames();
+
     await renderPokemon();
     hideSpinner();
-}
-
-// Fetches all pokemon names from the API and stores them in allPokemon
-async function fetchAllNames() {
-    const url = `https://pokeapi.co/api/v2/pokemon?limit=${MAX_POKEMON}&offset=0`;
-    const response = await fetch(url);
-    const data = await response.json();
-    allPokemon = data.results;
 }
 
 // Decides whether to render filtered results or the next batch
@@ -40,6 +32,7 @@ async function renderBatch() {
     const url = `https://pokeapi.co/api/v2/pokemon?limit=${end - startIndex}&offset=${startIndex}`;
     const response = await fetch(url);
     const data = await response.json();
+    allPokemon.push(...data.results)
     await appendPokemonCards(data.results, startIndex);
     startIndex = end;
     document.getElementById("load-more").style.display =
@@ -72,16 +65,23 @@ function searchPokemon() {
     const searchInput = document.getElementById("search-input");
     const text = searchInput.value.toLowerCase().trim();
     if (text.length >= 3) {
-        filteredPokemonArr = allPokemon.filter((pokemon) => pokemon.name.includes(text));
+        filteredPokemonArr = allPokemon.filter((pokemon) => pokemon.name.includes(text) && pokemon.image);
         if (filteredPokemonArr.length === 0) {
             handleNoMatch();
         } else {
             renderPokemon();
         }
     } else {
-        reset()
+        showMinLengthError();
     }
     searchInput.value = "";
+}
+
+// Shows an "error" if there are only 2 letters or less in search
+
+function showMinLengthError() {
+    content.innerHTML = "<p>min. 3 letters required<p>"
+    document.getElementById("load-more").style.display = "none";
 }
 
 // set filter, startindex and arr back to 0
@@ -109,13 +109,17 @@ async function loadPokemonDetails(pokemon, index) {
             pokemon[key] = detailedPokemon[key];
         }
         allPokemon[index] = pokemon;
-        for (let i = 0; i < detailedPokemon.evoChain.length; i++) {
-            const name = detailedPokemon.evoChain[i];
-            const evoIndex = allPokemon.findIndex((element) => element.name === name);
-            if (evoIndex !== -1) {
-                const evoPokemon = allPokemon[evoIndex];
-                await loadPokemonDetails(evoPokemon, evoIndex);
-            }
+        loadEvoCHain(detailedPokemon)
+    }
+}
+// Load EvolutionChain for filter
+async function loadEvoCHain(detailedPokemon) {
+    for (let i = 0; i < detailedPokemon.evoChain.length; i++) {
+        const name = detailedPokemon.evoChain[i];
+        const evoIndex = allPokemon.findIndex((element) => element.name === name);
+        if (evoIndex !== -1) {
+            const evoPokemon = allPokemon[evoIndex];
+            await loadPokemonDetails(evoPokemon, evoIndex);
         }
     }
 }
@@ -134,7 +138,7 @@ async function openDialog(index) {
 // Closes the pokemon detail dialog
 function closeDialog() {
     pokemonDialog.close();
-     document.body.style.overflow = "";
+    document.body.style.overflow = "";
 }
 
 // Injects the dialog HTML for the given pokemon into the dialog element
@@ -145,7 +149,7 @@ function dialogContent(pokemon) {
 // Closes the dialog when clicking on the backdrop
 pokemonDialog.addEventListener('click', (event) => {
     if (event.target === pokemonDialog) closeDialog();
-   });
+});
 
 // Formats a zero-based index into a zero-padded 3-digit ID string
 function formatedId(number) {
@@ -248,7 +252,11 @@ function next() {
     if (currentPokemonIndex < activeArray.length - 1) {
         currentPokemonIndex++;
         openDialog(currentPokemonIndex);
+    } else if (currentPokemonIndex === activeArray.length - 1) {
+        currentPokemonIndex = 0
+        openDialog(currentPokemonIndex);
     }
+
 }
 
 // Navigates to the previous pokemon and opens its dialog
@@ -256,10 +264,21 @@ function previous() {
     if (currentPokemonIndex > 0) {
         currentPokemonIndex--;
         openDialog(currentPokemonIndex);
+    } else if (currentPokemonIndex === 0) {
+        currentPokemonIndex = allPokemon.length - 1
+        openDialog(currentPokemonIndex);
     }
+
 }
 // Eventlistener for form tag
 document.getElementById("search-form").addEventListener("submit", function (event) {
     event.preventDefault();
     searchPokemon();
 });
+
+// Load more onklcik function 
+
+async function loadMore() {
+    filteredPokemonArr = [];
+    renderPokemon();
+}
