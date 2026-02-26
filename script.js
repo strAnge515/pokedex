@@ -6,6 +6,7 @@ const BATCH_SIZE = 20;
 const MAX_POKEMON = 151;
 const pokemonDialog = document.getElementById('pokemon-dialog');
 const content = document.getElementById("content");
+const BASE_URL = "https://pokeapi.co/api/v2/"
 
 // Initializes the app: fetches all pokemon names, renders the first batch
 async function init() {
@@ -29,14 +30,28 @@ async function renderPokemon() {
 // Fetches and renders the next 20 pokemon using limit/offset, updates the load-more button
 async function renderBatch() {
     const end = Math.min(startIndex + BATCH_SIZE, MAX_POKEMON);
-    const url = `https://pokeapi.co/api/v2/pokemon?limit=${end - startIndex}&offset=${startIndex}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const url = `${BASE_URL}pokemon?limit=${end - startIndex}&offset=${startIndex}`;
+    const data = await fetchData(url);
     allPokemon.push(...data.results)
     await appendPokemonCards(data.results, startIndex);
     startIndex = end;
-    document.getElementById("load-more").style.display =
-        startIndex >= MAX_POKEMON ? "none" : "block";
+    if (startIndex >= MAX_POKEMON) {
+        document.getElementById("load-more").classList.add("hidden");
+    } else {
+        document.getElementById("load-more").classList.remove("hidden");
+    }
+}
+
+async function fetchData(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(response.status)
+        }
+        return await response.json();
+    } catch (error) {
+        handleFetchError(error);
+    }
 }
 
 // Loads details for each pokemon in a batch and appends their cards to the grid
@@ -57,7 +72,7 @@ async function renderFiltered(array) {
         await loadPokemonDetails(array[i], globalIndex);
         content.innerHTML += genrateTemplate(array[i], globalIndex);
     }
-    document.getElementById("load-more").style.display = "none";
+    document.getElementById("load-more").classList.add("hidden");
 }
 
 // Reads the search input, filters allPokemon by name and triggers a re-render
@@ -70,18 +85,19 @@ function searchPokemon() {
             handleNoMatch();
         } else {
             renderPokemon();
+            searchInput.value = "";
         }
     } else {
         showMinLengthError();
     }
-    searchInput.value = "";
+
 }
 
 // Shows an "error" if there are only 2 letters or less in search
 
 function showMinLengthError() {
-    content.innerHTML = "<p>min. 3 letters required<p>"
-    document.getElementById("load-more").style.display = "none";
+    content.innerHTML = `<p>min. 3 letters required<p>`
+    document.getElementById("load-more").classList.add("hidden");
 }
 
 // set filter, startindex and arr back to 0
@@ -94,15 +110,14 @@ function reset() {
 
 // Function for no matches in search
 function handleNoMatch() {
-    content.innerHTML = "<p>No match found</p>";
-    document.getElementById("load-more").style.display = "none";
+    content.innerHTML = `<p>No match found</p>`
+    document.getElementById("load-more").classList.add("hidden");
 }
 
 // Fetches full details for a pokemon if not already loaded, enriches the allPokemon entry
 async function loadPokemonDetails(pokemon, index) {
     if (!pokemon.image) {
-        const response = await fetch(pokemon.url);
-        const data = await response.json();
+        const data = await fetchData(pokemon.url);
         const detailedPokemon = createPokemonObject(data);
         detailedPokemon.evoChain = await loadPokeChain(data);
         for (let key in detailedPokemon) {
@@ -112,6 +127,8 @@ async function loadPokemonDetails(pokemon, index) {
         loadEvoCHain(detailedPokemon)
     }
 }
+
+
 // Load EvolutionChain for filter
 async function loadEvoCHain(detailedPokemon) {
     for (let i = 0; i < detailedPokemon.evoChain.length; i++) {
@@ -213,11 +230,10 @@ function showTab(tabId) {
 
 // Fetches the species and evolution chain data for a pokemon from the API
 async function loadPokeChain(data) {
-    const speciesRes = await fetch(data.species.url);
-    const speciesData = await speciesRes.json();
-    const evoRes = await fetch(speciesData.evolution_chain.url);
-    const evoData = await evoRes.json();
+    const speciesData = await fetchData(data.species.url)
+    const evoData = await fetchData(speciesData.evolution_chain.url)
     return createPokeChain(evoData);
+
 }
 
 // Walks the evolution chain and returns an ordered array of species names
@@ -261,23 +277,18 @@ function next() {
 
 // Navigates to the previous pokemon and opens its dialog
 function previous() {
+    const activeArray = filteredPokemonArr.length ? filteredPokemonArr : allPokemon;
     if (currentPokemonIndex > 0) {
         currentPokemonIndex--;
         openDialog(currentPokemonIndex);
     } else if (currentPokemonIndex === 0) {
-        currentPokemonIndex = allPokemon.length - 1
+        currentPokemonIndex = activeArray.length - 1
         openDialog(currentPokemonIndex);
     }
 
 }
-// Eventlistener for form tag
-document.getElementById("search-form").addEventListener("submit", function (event) {
-    event.preventDefault();
-    searchPokemon();
-});
 
 // Load more onklcik function 
-
 async function loadMore() {
     filteredPokemonArr = [];
     renderPokemon();

@@ -8,7 +8,15 @@ body {
   font-family: sans-serif;
   background: #f4f6fb;
   color: #222;
-    margin: 0 auto;
+  margin: 0 auto;
+}
+
+.cursor {
+  cursor: pointer;
+}
+
+.hidden {
+  display: none;
 }
 
 /* ===== HEADER ===== */
@@ -31,11 +39,6 @@ body {
 .img-header {
   height: 60px;
   object-fit: contain;
-  cursor: pointer;
-}
-
-.img-header:hover {
-  background-color: #639CE4;
 }
 
 #search-form {
@@ -68,6 +71,24 @@ body {
 }
 
 #search-btn:hover {
+  background: #f0b800;
+  transform: translateY(-2px);
+}
+
+.home-button {
+  padding: 10px 22px;
+  background: #ffcb05;
+  color: #222;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.home-button:hover {
   background: #f0b800;
   transform: translateY(-2px);
 }
@@ -291,7 +312,8 @@ dialog::backdrop {
   border: none;
   padding: 12px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: bold;
+  font-size: 16px;
 }
 
 .tab-panel {
@@ -375,23 +397,73 @@ dialog::backdrop {
 
 /* ===== TYPE COLORS ===== */
 
-.type-grass { background-color: #82C95B; }
-.type-fire { background-color: #E87A3D; }
-.type-normal { background-color: rgb(165, 165, 165, 0.76); }
-.type-water { background-color: #639CE4; }
-.type-electric { background-color: #F7D02C; }
-.type-ice { background-color: #96D9D6; }
-.type-fighting { background-color: #C22E28; }
-.type-poison { background-color: #A33EA1; }
-.type-ground { background-color: #E2BF65; }
-.type-flying { background-color: #7da6de; }
-.type-psychic { background-color: #F95587; }
-.type-bug { background-color: #A6B91A; }
-.type-rock { background-color: #B6A136; }
-.type-ghost { background-color: #735797; }
-.type-dragon { background-color: #6F35FC; }
-.type-fairy { background-color: #D685AD; }
-.type-steel { background-color: #9FA9AF; }
+.type-grass {
+  background-color: #82C95B;
+}
+
+.type-fire {
+  background-color: #E87A3D;
+}
+
+.type-normal {
+  background-color: rgb(165, 165, 165, 0.76);
+}
+
+.type-water {
+  background-color: #639CE4;
+}
+
+.type-electric {
+  background-color: #F7D02C;
+}
+
+.type-ice {
+  background-color: #96D9D6;
+}
+
+.type-fighting {
+  background-color: #C22E28;
+}
+
+.type-poison {
+  background-color: #A33EA1;
+}
+
+.type-ground {
+  background-color: #E2BF65;
+}
+
+.type-flying {
+  background-color: #7da6de;
+}
+
+.type-psychic {
+  background-color: #F95587;
+}
+
+.type-bug {
+  background-color: #A6B91A;
+}
+
+.type-rock {
+  background-color: #B6A136;
+}
+
+.type-ghost {
+  background-color: #735797;
+}
+
+.type-dragon {
+  background-color: #6F35FC;
+}
+
+.type-fairy {
+  background-color: #D685AD;
+}
+
+.type-steel {
+  background-color: #9FA9AF;
+}
 
 /* ===== LOADING SPINNER ===== */
 
@@ -438,8 +510,13 @@ dialog::backdrop {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* ===== RESPONSIVE ===== */

@@ -25,9 +25,9 @@ function generateDialogTemplate(pokemon) {
             <span class="dialog-pokemon-id">#${formatedId(pokemon.id - 1)}</span>
         </header>
         <section class="dialog-hero type-${pokemon.types[0]}">
-            <button class="button-left button" onclick="previous()">&#8592;</button>
+            <button class="button-left button cursor" onclick="previous()">&#8592;</button>
             <img src="${pokemon.image}" alt="${pokemon.name}" class="dialog-pokemon-image">
-            <button class="button-right button" onclick="next()">&#8594;</button>
+            <button class="button-right button cursor" onclick="next()">&#8594;</button>
         </section>
         <section class="dialog-tab-content">
             <nav class="dialog-tabs">
