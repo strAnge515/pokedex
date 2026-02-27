@@ -35,7 +35,6 @@ async function renderBatch() {
     allPokemon.push(...data.results)
     await appendPokemonCards(data.results, startIndex);
     startIndex = end;
-
     if (startIndex >= MAX_POKEMON) {
         document.getElementById("load-more").classList.add("hidden");
     } else {
@@ -72,7 +71,7 @@ async function appendPokemonCards(batch, offsetIndex) {
     for (let i = 0; i < batch.length; i++) {
         const globalIndex = offsetIndex + i;
         const pokemon = allPokemon[globalIndex];
-        await loadPokemonDetails(pokemon, globalIndex);
+        await laodPokemonGrid(pokemon, globalIndex);
         content.innerHTML += genrateTemplate(pokemon, globalIndex);
     }
 }
@@ -129,10 +128,23 @@ function handleNoMatch() {
     document.getElementById("load-more").classList.add("hidden");
 }
 
+async function laodPokemonGrid(pokemon, index) {
+    if (!pokemon.abilities) {
+        const data = await fetchData(pokemon.url)
+        const detailedPokemon = createFirstPokemonData(data);
+        for (let key in detailedPokemon) {
+            pokemon[key] = detailedPokemon[key];
+        }
+        allPokemon[index] = pokemon;
+    }
+
+}
 // Fetches full details for a pokemon if not already loaded, enriches the allPokemon entry
 async function loadPokemonDetails(pokemon, index) {
-    if (!pokemon.image) {
+    if (!pokemon.abilities)  {
         const data = await fetchData(pokemon.url);
+
+
         const detailedPokemon = createPokemonObject(data);
         detailedPokemon.evoChain = await loadPokeChain(data);
         for (let key in detailedPokemon) {
@@ -179,7 +191,7 @@ function dialogContent(pokemon) {
     pokemonDialog.innerHTML = generateDialogTemplate(pokemon);
     if (activeArray.length <= 1) {
         document.querySelector(".button-right").classList.add("hidden");
-         document.querySelector(".button-left").classList.add("hidden");
+        document.querySelector(".button-left").classList.add("hidden");
     }
 }
 
@@ -193,6 +205,13 @@ function formatedId(number) {
     return (number + 1).toString().padStart(3, "0");
 }
 
+function createFirstPokemonData(data) {
+    return {
+        id: data.id, name: data.name,
+        image: data.sprites.other["official-artwork"].front_default,
+        types: data.types.map((pokeType) => pokeType.type.name),
+    }
+}
 // Maps raw API data into a clean, structured pokemon object
 function createPokemonObject(data) {
     return {
