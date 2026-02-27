@@ -175,7 +175,12 @@ function closeDialog() {
 
 // Injects the dialog HTML for the given pokemon into the dialog element
 function dialogContent(pokemon) {
+    const activeArray = filteredPokemonArr.length ? filteredPokemonArr : allPokemon;
     pokemonDialog.innerHTML = generateDialogTemplate(pokemon);
+    if (activeArray.length <= 1) {
+        document.querySelector(".button-right").classList.add("hidden");
+         document.querySelector(".button-left").classList.add("hidden");
+    }
 }
 
 // Closes the dialog when clicking on the backdrop
