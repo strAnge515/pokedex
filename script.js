@@ -68,12 +68,14 @@ function handleFetchError(error) {
 
 // Loads details for each pokemon in a batch and appends their cards to the grid
 async function appendPokemonCards(batch, offsetIndex) {
+    let template = "";
     for (let i = 0; i < batch.length; i++) {
         const globalIndex = offsetIndex + i;
         const pokemon = allPokemon[globalIndex];
         await laodPokemonGrid(pokemon, globalIndex);
-        content.innerHTML += genrateTemplate(pokemon, globalIndex);
+        template += genrateTemplate(pokemon, globalIndex);
     }
+    content.innerHTML = template;
 }
 
 // Clears the grid and renders only the pokemon matching the current search
