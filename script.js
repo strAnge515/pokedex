@@ -35,10 +35,19 @@ async function renderBatch() {
     allPokemon.push(...data.results)
     await appendPokemonCards(data.results, startIndex);
     startIndex = end;
+
     if (startIndex >= MAX_POKEMON) {
         document.getElementById("load-more").classList.add("hidden");
     } else {
         document.getElementById("load-more").classList.remove("hidden");
+    }
+}
+
+function renderLoadedPokemon() {
+    content.innerHTML = "";
+    for (let i = 0; i < allPokemon.length; i++) {
+        const pokemon = allPokemon[i];
+        content.innerHTML += genrateTemplate(pokemon, i)
     }
 }
 
@@ -52,6 +61,10 @@ async function fetchData(url) {
     } catch (error) {
         handleFetchError(error);
     }
+}
+
+function handleFetchError(error) {
+    content.innerHTML = `<p>Something went wrong: ${error.message}</p>`;
 }
 
 // Loads details for each pokemon in a batch and appends their cards to the grid
@@ -71,6 +84,8 @@ async function renderFiltered(array) {
         const globalIndex = allPokemon.findIndex((pokemon) => pokemon.name === array[i].name);
         await loadPokemonDetails(array[i], globalIndex);
         content.innerHTML += genrateTemplate(array[i], globalIndex);
+
+
     }
     document.getElementById("load-more").classList.add("hidden");
 }
@@ -101,11 +116,11 @@ function showMinLengthError() {
 }
 
 // set filter, startindex and arr back to 0
-function reset() {
+function resetPage() {
     filteredPokemonArr = [];
     content.innerHTML = "";
     startIndex = 0;
-    renderPokemon();
+    renderLoadedPokemon();
 }
 
 // Function for no matches in search
@@ -149,13 +164,13 @@ async function openDialog(index) {
     await loadPokemonDetails(pokemon, index);
     pokemonDialog.showModal();
     dialogContent(pokemon);
-    document.body.style.overflow = "hidden";
+    document.body.classList.add("no-scroll");
 }
 
 // Closes the pokemon detail dialog
 function closeDialog() {
     pokemonDialog.close();
-    document.body.style.overflow = "";
+    document.body.classList.remove("no-scroll");
 }
 
 // Injects the dialog HTML for the given pokemon into the dialog element
@@ -265,27 +280,22 @@ function hideSpinner() {
 // Navigates to the next pokemon in the active array and opens its dialog
 function next() {
     const activeArray = filteredPokemonArr.length ? filteredPokemonArr : allPokemon;
-    if (currentPokemonIndex < activeArray.length - 1) {
-        currentPokemonIndex++;
-        openDialog(currentPokemonIndex);
-    } else if (currentPokemonIndex === activeArray.length - 1) {
-        currentPokemonIndex = 0
-        openDialog(currentPokemonIndex);
-    }
-
+    const currentPokemon = allPokemon[currentPokemonIndex];
+    let filteredIndex = activeArray.findIndex((pokemon) => pokemon.name === currentPokemon.name);
+    filteredIndex = filteredIndex < activeArray.length - 1 ? filteredIndex + 1 : 0;
+    const nextPokemon = activeArray[filteredIndex];
+    const globalIndex = allPokemon.findIndex((pokemon) => pokemon.name === nextPokemon.name);
+    openDialog(globalIndex);
 }
 
-// Navigates to the previous pokemon and opens its dialog
 function previous() {
     const activeArray = filteredPokemonArr.length ? filteredPokemonArr : allPokemon;
-    if (currentPokemonIndex > 0) {
-        currentPokemonIndex--;
-        openDialog(currentPokemonIndex);
-    } else if (currentPokemonIndex === 0) {
-        currentPokemonIndex = activeArray.length - 1
-        openDialog(currentPokemonIndex);
-    }
-
+    const currentPokemon = allPokemon[currentPokemonIndex];
+    let filteredIndex = activeArray.findIndex((pokemon) => pokemon.name === currentPokemon.name);
+    filteredIndex = filteredIndex > 0 ? filteredIndex - 1 : activeArray.length - 1;
+    const nextPokemon = activeArray[filteredIndex];
+    const globalIndex = allPokemon.findIndex((pokemon) => pokemon.name === nextPokemon.name);
+    openDialog(globalIndex);
 }
 
 // Load more onklcik function 
