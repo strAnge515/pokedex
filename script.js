@@ -75,7 +75,7 @@ async function appendPokemonCards(batch, offsetIndex) {
         await laodPokemonGrid(pokemon, globalIndex);
         template += genrateTemplate(pokemon, globalIndex);
     }
-    content.innerHTML = template;
+    content.innerHTML += template;
 }
 
 // Clears the grid and renders only the pokemon matching the current search
